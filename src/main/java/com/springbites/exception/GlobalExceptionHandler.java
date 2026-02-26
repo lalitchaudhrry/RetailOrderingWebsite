@@ -4,15 +4,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.springframework.web.bind.annotation.*;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    // ❌ Resource not found (404)
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
         Map<String, String> body = new HashMap<>();
@@ -20,6 +21,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
+    // ❌ Insufficient stock (400)
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<Map<String, String>> handleStock(InsufficientStockException ex) {
         Map<String, String> body = new HashMap<>();
@@ -27,6 +29,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
+    // ❌ Empty cart (400)
     @ExceptionHandler(CartEmptyException.class)
     public ResponseEntity<Map<String, String>> handleEmptyCart(CartEmptyException ex) {
         Map<String, String> body = new HashMap<>();
@@ -34,7 +37,7 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    // ✅ DTO Validation Errors (Very Important)
+    // ❌ DTO Validation Errors (400)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -44,15 +47,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // ✅ Fallback for any unexpected exception
+    // ❌ Any other unexpected error (500)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
         Map<String, String> body = new HashMap<>();
         body.put("error", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    // ❌ Generic runtime exception (optional)
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleRuntime(RuntimeException ex) {
-        return ex.getMessage();
+    public Map<String, String> handleRuntime(RuntimeException ex) {
+        Map<String, String> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        return body;
     }
 }

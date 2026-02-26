@@ -6,6 +6,7 @@ import com.springbites.dto.CartResponse;
 import com.springbites.entity.Cart;
 import com.springbites.entity.CartItem;
 import com.springbites.entity.Product;
+import com.springbites.entity.User;
 import com.springbites.exception.ResourceNotFoundException;
 import com.springbites.repository.CartRepository;
 import com.springbites.repository.ProductRepository;
@@ -26,7 +27,9 @@ public class CartService {
         Cart cart = cartRepository.findByUserId(request.getUserId())
                 .orElseGet(() -> {
                     Cart c = new Cart();
-                    c.setUserId(request.getUserId());
+                    User user = new User();
+                    user.setId(request.getUserId());
+                    c.setUser(user);
                     return c;
                 });
 
@@ -57,18 +60,23 @@ public class CartService {
     }
 
     private CartResponse mapToResponse(Cart cart) {
+
+        double total = cart.getItems().stream()
+                .mapToDouble(i -> i.getProduct().getPrice() * i.getQuantity())
+                .sum();
+
         return new CartResponse(
                 cart.getId(),
                 cart.getUser().getId(),
                 cart.getItems().stream()
                         .map(i -> new CartItemResponse(
-                                i.getId(),
                                 i.getProduct().getId(),
                                 i.getProduct().getName(),
-                                i.getQuantity(),
-                                i.getProduct().getPrice()
+                                i.getProduct().getPrice(),
+                                i.getQuantity()
                         ))
-                        .collect(Collectors.toList())
+                        .collect(Collectors.toList()),
+                total
         );
     }
 }

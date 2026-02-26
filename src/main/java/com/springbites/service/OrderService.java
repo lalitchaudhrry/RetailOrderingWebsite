@@ -2,7 +2,11 @@ package com.springbites.service;
 
 import com.springbites.dto.OrderItemResponse;
 import com.springbites.dto.OrderResponse;
-import com.springbites.entity.*;
+import com.springbites.entity.Cart;
+import com.springbites.entity.CartItem;
+import com.springbites.entity.Order;
+import com.springbites.entity.OrderItem;
+import com.springbites.entity.Product;
 import com.springbites.exception.CartEmptyException;
 import com.springbites.exception.InsufficientStockException;
 import com.springbites.exception.ResourceNotFoundException;
@@ -43,25 +47,31 @@ public class OrderService {
         for (CartItem ci : cart.getItems()) {
             Product product = ci.getProduct();
 
-            if (product.getStockQty() < ci.getQuantity()) {
+            // ✅ Stock check using Product.stock
+            if (product.getStock() < ci.getQuantity()) {
                 throw new InsufficientStockException("Insufficient stock for " + product.getName());
             }
 
-            product.setStockQty(product.getStockQty() - ci.getQuantity());
+            // ✅ Reduce stock
+            product.setStock(product.getStock() - ci.getQuantity());
             productRepository.save(product);
 
+            // ✅ Create order item
             OrderItem oi = new OrderItem();
             oi.setProduct(product);
             oi.setQuantity(ci.getQuantity());
             oi.setPrice(product.getPrice());
 
             order.getItems().add(oi);
+
+            // ✅ Calculate total
             total += product.getPrice() * ci.getQuantity();
         }
 
         order.setTotalAmount(total);
         Order saved = orderRepository.save(order);
 
+        // ✅ Clear cart after successful order
         cart.getItems().clear();
         cartRepository.save(cart);
 
@@ -78,16 +88,15 @@ public class OrderService {
     private OrderResponse mapToResponse(Order order) {
         return new OrderResponse(
                 order.getId(),
-                order.getUser().getId(),
-                order.getTotalAmount(),
                 order.getStatus(),
+                order.getTotalAmount(),
+                order.getCreatedAt(),
                 order.getItems().stream()
                         .map(i -> new OrderItemResponse(
-                                i.getId(),
                                 i.getProduct().getId(),
                                 i.getProduct().getName(),
-                                i.getQuantity(),
-                                i.getPrice()
+                                i.getPrice(),
+                                i.getQuantity()
                         ))
                         .collect(Collectors.toList())
         );
